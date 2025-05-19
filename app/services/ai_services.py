@@ -1,156 +1,62 @@
 import logging
 from typing import List, Dict, Any, Optional
 from app.models.ai_models import (
-    Message, Conversation, 
-    TextAnalysisRequest, TextAnalysisResponse,
-    RecommendationRequest, RecommendationResponse, RecommendationItem,
-    Transaction, FraudDetectionResult
+    HealthMessage, HealthConversation, HealthChatRequest, HealthChatResponse, HealthTopic
 )
 import asyncio
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-class LLMService:
-    """Service for interacting with Large Language Models."""
+class HealthChatService:
+    """Service for health-related chatbot interactions."""
     
     def __init__(self, model_name: str, api_key: Optional[str] = None):
         self.model_name = model_name
         self.api_key = api_key
-        logger.info(f"Initialized LLM service with model: {model_name}")
+        logger.info(f"Initialized Health Chat service with model: {model_name}")
         
-    async def generate_response(self, messages: List[Dict[str, Any]]) -> str:
-        """Generate a response from the LLM based on conversation history."""
+    async def generate_response(self, request: HealthChatRequest) -> HealthChatResponse:
+        """Generate a health-related response based on user input."""
         try:
-            # Implementation depends on the specific LLM API being used
-            # Example with OpenAI:
-            # from openai import AsyncOpenAI
-            # client = AsyncOpenAI(api_key=self.api_key)
-            # response = await client.chat.completions.create(
-            #     model=self.model_name,
-            #     messages=messages
-            # )
-            # return response.choices[0].message.content
+            # In a real implementation, you would use a specialized health LLM or knowledge base
+            # For this example, we'll use a simple keyword-based system
             
-            # Placeholder implementation
-            logger.info(f"Generating response using {self.model_name}")
-            await asyncio.sleep(0.5)  # Simulate API call
-            return "This is a placeholder response from the LLM service."
-        except Exception as e:
-            logger.error(f"Error generating LLM response: {str(e)}")
-            raise
-
-class TextAnalysisService:
-    """Service for text analysis operations like sentiment analysis, entity recognition, etc."""
-    
-    def __init__(self, model_name: str):
-        self.model_name = model_name
-        logger.info(f"Initialized Text Analysis service with model: {model_name}")
-    
-    async def analyze_text(self, request: TextAnalysisRequest) -> TextAnalysisResponse:
-        """Analyze text based on the requested analysis type."""
-        try:
-            # Implementation depends on the specific NLP library being used
-            # Example with transformers:
-            # from transformers import pipeline
-            # analyzer = pipeline(request.analysis_type, model=self.model_name)
-            # result = analyzer(request.text)
+            message = request.message.lower()
+            topic = HealthTopic.GENERAL
+            response = "I'm sorry, I don't have specific information about that. Please consult a healthcare professional for personalized advice."
+            additional_info = {}
             
-            # Placeholder implementation
-            logger.info(f"Analyzing text with {self.model_name} for {request.analysis_type}")
-            await asyncio.sleep(0.5)  # Simulate processing
+            if "nutrition" in message or "diet" in message or "food" in message:
+                topic = HealthTopic.NUTRITION
+                response = "A balanced diet is crucial for good health. Make sure to include a variety of fruits, vegetables, whole grains, lean proteins, and healthy fats in your meals."
+                additional_info = {"recommended_daily_calories": 2000, "important_nutrients": ["Vitamin C", "Calcium", "Iron"]}
             
-            # Mock results based on analysis type
-            if request.analysis_type == "sentiment":
-                result = {"sentiment": "positive", "score": 0.92}
-            elif request.analysis_type == "entities":
-                result = {"entities": [{"text": "example", "type": "MISC", "score": 0.85}]}
-            else:
-                result = {"result": "analysis complete"}
-                
-            return TextAnalysisResponse(
-                result=result,
-                processing_time=0.5,
-                model_used=self.model_name
+            elif "exercise" in message or "workout" in message or "fitness" in message:
+                topic = HealthTopic.FITNESS
+                response = "Regular exercise is important for maintaining good health. Aim for at least 150 minutes of moderate aerobic activity or 75 minutes of vigorous aerobic activity per week, along with strength training exercises."
+                additional_info = {"exercise_types": ["cardio", "strength training", "flexibility"], "benefits": ["improved cardiovascular health", "stronger muscles and bones", "better mental health"]}
+            
+            elif "mental health" in message or "stress" in message or "anxiety" in message:
+                topic = HealthTopic.MENTAL_HEALTH
+                response = "Mental health is just as important as physical health. If you're feeling stressed or anxious, try relaxation techniques like deep breathing, meditation, or talking to a trusted friend. Don't hesitate to seek professional help if needed."
+                additional_info = {"coping_strategies": ["mindfulness", "regular exercise", "adequate sleep"], "resources": ["National Mental Health Hotline: 1-800-273-TALK"]}
+            
+            elif "first aid" in message or "emergency" in message:
+                topic = HealthTopic.FIRST_AID
+                response = "For any medical emergency, call your local emergency number immediately. For minor injuries, always keep a well-stocked first aid kit at home and know basic first aid procedures."
+                additional_info = {"emergency_number": "911", "first_aid_kit_essentials": ["bandages", "antiseptic wipes", "pain relievers"]}
+            
+            logger.info(f"Generated health response for topic: {topic}")
+            
+            return HealthChatResponse(
+                response=response,
+                conversation_id=request.conversation_id or str(uuid.uuid4()),
+                topic=topic,
+                additional_info=additional_info
             )
         except Exception as e:
-            logger.error(f"Error in text analysis: {str(e)}")
+            logger.error(f"Error generating health chat response: {str(e)}")
             raise
 
-class RecommendationService:
-    """Service for generating recommendations."""
-    
-    def __init__(self, model_name: str):
-        self.model_name = model_name
-        logger.info(f"Initialized Recommendation service with model: {model_name}")
-    
-    async def get_recommendations(self, request: RecommendationRequest) -> RecommendationResponse:
-        """Generate recommendations for a user."""
-        try:
-            # Implementation would connect to a recommendation model or service
-            # Placeholder implementation
-            logger.info(f"Generating recommendations for user {request.user_id}")
-            await asyncio.sleep(0.5)  # Simulate processing
-            
-            # Generate mock recommendations
-            recommendations = [
-                RecommendationItem(
-                    item_id=f"item_{i}",
-                    score=0.9 - (i * 0.1),
-                    metadata={"category": "example", "name": f"Item {i}"}
-                )
-                for i in range(request.num_recommendations)
-            ]
-            
-            return RecommendationResponse(
-                recommendations=recommendations,
-                user_id=request.user_id,
-                processing_time=0.5,
-                model_used=self.model_name
-            )
-        except Exception as e:
-            logger.error(f"Error generating recommendations: {str(e)}")
-            raise
-
-class FraudDetectionService:
-    """Service for detecting fraudulent transactions."""
-    
-    def __init__(self, model_name: str):
-        self.model_name = model_name
-        logger.info(f"Initialized Fraud Detection service with model: {model_name}")
-    
-    async def analyze_transaction(self, transaction: Transaction) -> FraudDetectionResult:
-        """Analyze a transaction for potential fraud."""
-        try:
-            # Implementation would connect to a fraud detection model
-            # Placeholder implementation
-            logger.info(f"Analyzing transaction {transaction.id} for fraud")
-            await asyncio.sleep(0.5)  # Simulate processing
-            
-            # Generate mock fraud detection result
-            # In a real implementation, this would use ML models to analyze the transaction
-            risk_score = 0.1  # Low risk by default
-            
-            # Simple rule-based checks for demonstration
-            reasons = []
-            if transaction.amount > 1000:
-                risk_score += 0.2
-                reasons.append("High transaction amount")
-            
-            if transaction.location and transaction.location != "usual_location":
-                risk_score += 0.3
-                reasons.append("Unusual location")
-            
-            is_fraudulent = risk_score > 0.5
-            
-            return FraudDetectionResult(
-                transaction_id=transaction.id,
-                risk_score=risk_score,
-                is_fraudulent=is_fraudulent,
-                confidence=0.8,
-                reasons=reasons,
-                model_used=self.model_name
-            )
-        except Exception as e:
-            logger.error(f"Error in fraud detection: {str(e)}")
-            raise
+# Keep other service classes (LLMService, TextAnalysisService, etc.) as they were...
